@@ -11,9 +11,10 @@ client.connect("localhost", 6600)
 #for key, value in client.status().items():
 #    print("%s: %s" % (key, value))
 
-for lel in client.playlist():
+for lel in client.playlistinfo():
     print(lel)
-
-client.previous()
-
+    print("")
+    print(lel["artist"])
+#client.update()
+client.next()
 client.disconnect()
