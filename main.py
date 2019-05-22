@@ -42,22 +42,57 @@ class viewport:
         self.screen.refresh()
 
 
-class Topbar():
+class Topbar:
+    def __init__(self, client):
+        self.client = client
 
     def render(self,pos_y,pos_x, height, width, window):
-        songtitle = "Beispiel Songtitel der nicht Scrollt"
+        currentsong = self.client.currentsong()
+        status = self.client.status()
+        #get and define important Data
+        if status["state"] == "stop":
+            songtitle = "No Song playing"
+            statestring = "Stopped:"
+        elif status["state"] == "pause":
+            statestring = "Paused:"
+            songtitle = currentsong["artist"] + " | "+ currentsong["title"]
+        elif status["state"] == "play":
+            songtitle = currentsong["artist"] + " | "+ currentsong["title"]
+            statestring = "Playing:"
+        else:
+            pass
+
         logostring =  " MPyC "
         mid_pos = width//2
         len_songtitle = len(songtitle)
+        window.addstr(0,1, statestring, curses.A_BOLD)
         window.addstr(0, mid_pos - len_songtitle//2, songtitle, curses.A_NORMAL)
         window.addstr(0, width - 1 - len(logostring),logostring, curses.A_STANDOUT)
         window.addstr(1, 2, "============>",curses.A_NORMAL)
         window.hline(2,0,curses.ACS_HLINE,width)
 
 class Commandline():
+
+    def __init__(self, client):
+
+        self.client = client
     def render(self, pos_y, pos_x, height, width, window):
-        #window.box()
-        songduration = "[1:25|3:33]"
+
+        status = self.client.status()
+        if status["state"] == "stop":
+            time_elapsed = "x"
+            time_passed = "x"
+        else:
+            time_info = status["time"].split(':')
+            time_elapsed_min = int(time_info[0]) // 60
+            time_elapsed_sec = int(time_info[0]) % 60
+            time_elapsed = str(time_elapsed_min) + ":" + str(time_elapsed_sec)
+
+            time_passed_min = int(time_info[1]) // 60
+            time_passed_sec = int(time_info[1]) % 60
+            time_passed = str(time_passed_min) + ":" + str(time_passed_sec)
+
+        songduration = "["+time_elapsed +"|"+ time_passed +"]"
         window.hline(0,0,curses.ACS_HLINE,width)
         window.addstr(0, width - 1 - len(songduration),songduration, curses.A_NORMAL)
         window.addstr(1 ,1,"lel",curses.A_NORMAL)
@@ -87,7 +122,7 @@ class Lyrics():
 class Playlist():
     def __init__(self, client):
         self.client = client
-        pass
+        self.titletext = curses.A_BOLD | curses.color_pair(2)
 
     def render(self, pos_y, pos_x, height, width, window):
         size_artist = 10
@@ -100,13 +135,19 @@ class Playlist():
         start_pos_album = width - 1 - size_time - 1 - size_album
         start_pos_time = width - 1 - size_time
 
+        window.addstr(0,0,"Artist",self.titletext)
+        window.addstr(0,start_pos_track,"Track",self.titletext)
+        window.addstr(0,start_pos_title,"Title",self.titletext)
+        window.addstr(0,start_pos_album,"Album",self.titletext)
+        window.addstr(0,start_pos_time,"Time",self.titletext)
+        window.hline(1,0,curses.ACS_HLINE,width)
 
         for index, lel in enumerate(self.client.playlistinfo()):
-            window.addstr(index,0,lel["artist"],curses.A_NORMAL)
-            window.addstr(index,start_pos_track,lel["track"][:size_track], curses.A_NORMAL)
-            window.addstr(index,start_pos_title,lel["title"][:size_title],curses.A_NORMAL)
-            window.addstr(index,start_pos_album,lel["album"][:size_album],curses.A_NORMAL)
-            window.addstr(index,start_pos_time,lel["time"][:size_time],curses.A_NORMAL)
+            window.addstr(index + 2,0,lel["artist"][:size_album],curses.A_NORMAL)
+            window.addstr(index + 2,start_pos_track,lel["track"][:size_track], curses.A_NORMAL)
+            window.addstr(index + 2,start_pos_title,lel["title"][:size_title],curses.A_NORMAL)
+            window.addstr(index + 2,start_pos_album,lel["album"][:size_album],curses.A_NORMAL)
+            window.addstr(index + 2,start_pos_time,lel["time"][:size_time],curses.A_NORMAL)
 
 
 def main(stdscr):
@@ -114,15 +155,28 @@ def main(stdscr):
     client = mpd.MPDClient(use_unicode=True)
     client.connect("localhost", 6600)
 
+    #initialize colors
     curses.start_color()
     curses.use_default_colors()
     for i in range(0, curses.COLORS):
         curses.init_pair(i + 1, i, -1)
+
+
     stdscr.nodelay(1)   #Used to make .getch() not wait for a keysroke
+
+    #create all mainviewclasses
+    playlist = Playlist(client)
+    lyrics = Lyrics()
+    colortest = ColorTest()
+    library = Library()
+
+    #setup initial terminalseparation
     height, width = stdscr.getmaxyx()
-    topview = viewport(0,0,3,width, Topbar())
+    topview = viewport(0,0,3,width, Topbar(client))
     mainview= viewport(3,0,height-5,width)
-    bottomview = viewport(height-2,0,2,width, Commandline())
+    bottomview = viewport(height-2,0,2,width, Commandline(client))
+
+
     global running
     running = True
 
@@ -135,7 +189,9 @@ def main(stdscr):
         if c in (curses.KEY_END, ord('!'), ord('q')):
             running = False
         if c == ord('p'):
-            mainview.set_content(Playlist(client))
+            mainview.set_content(playlist)
+        if c == ord('c'):
+            mainview.set_content(colortest)
         elif c == curses.KEY_RESIZE:
             height, width = stdscr.getmaxyx()
             topview.update_on_resize(0,0,3,width)
