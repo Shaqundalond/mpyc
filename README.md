@@ -2,42 +2,53 @@
 A "simple" curses media player client written in Python
 
 # TODO
-
+## Allgemein
+* Update Funktion
+* Abfangen falls MPD nicht läuft
 
 ## MPD
-*MPD abspielen
-*MPD Playlist auslesen
+* MPD abspielen
+* MPD Playlist auslesen [done]
 
 ## curses
 * HOTKEYS definieren
 * Klassen definieren fuer:
-	Playlist x
-	Library x
-	Visualizer x
-	Statusbar x
-	Bottombar x
+	[done]Playlist x
+	[done]Library x
+	[done]Visualizer x
+	[done]Statusbar x
+	[done]Bottombar x
 
 ## Statusbar
 * Current Song:
-	benoetigt Time
-	nimm Song String und schneide ihn mit [n:k] ab
-	aktualisiere n und k nach X ticks
-	k-n = width - reservierte Zeichen  (MpYC z.B)
+	[done]benoetigt Time
+	[done]nimm Song String und schneide ihn mit [n:k] ab
+	[done]aktualisiere n und k nach X ticks
+	[done]k-n = width - reservierte Zeichen  (MpYC z.B)
+	Song titel als Laufschrift realisieren
 * Progress in Song:
 	100/width = % per width_unit
 
 
 ## Bottombar
-* q for quit
+* commandline
+
 
 ## Playlist
 * Playlist anzeigen:
 	* farbliches Highlighten
-	* Scrollbar falls Playlist > window.height
-	* Highlighting auf welchem Song ich bin
+	* [deprecated] Scrollbar falls Playlist > window.height
+	* [done] Highlighting auf welchem Song ich bin
 
 * Playlist elemete loeschen
 * Playlist Elemente verschieben
+* Anpassen dass width/height per extrafunktion geupdatet wird
+* anzeigen von Bildern mittels Ueberzug
+*
+
+
+
+
 
 ## Library
 * Library anzeigen
@@ -46,6 +57,8 @@ A "simple" curses media player client written in Python
 * recursive Adding to playlist
 
 
-Keyhandler
+## Keyhandler
+* muss zwischen den Fenstern unterscheiden können
+* q for quit
 
 

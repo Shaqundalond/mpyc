@@ -45,8 +45,8 @@ def main(stdscr):
 
     curses.curs_set(0)
     stdscr.refresh()
+    c = None
     while running:
-        c = stdscr.getch()
 
         #stdscr.erase()
         if c in (curses.KEY_END, ord('!'), ord('q')):
@@ -55,6 +55,8 @@ def main(stdscr):
             mainview.set_content(playlist)
         if c == ord('c'):
             mainview.set_content(colortest)
+        if c == curses.KEY_DOWN:
+            playlist.move_chosen_up()
         elif c == curses.KEY_RESIZE:
             height, width = stdscr.getmaxyx()
             topview.update_on_resize(0,0,3,width)
@@ -66,7 +68,9 @@ def main(stdscr):
         topview.render_content()
         mainview.render_content()
         bottomview.render_content()
-        time.sleep(0.100)
+
+        c = stdscr.getch()
+        #time.sleep(0.100)
 if __name__=='__main__':
     curses.wrapper(main)
 
