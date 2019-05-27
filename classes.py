@@ -30,6 +30,7 @@ class viewport():
             pass
         else:
             self.content.render(self.pos_y, self.pos_x, self.height, self.width, self.screen)
+    def display_content(self):
         self.screen.refresh()
 
 
@@ -175,7 +176,7 @@ class Playlist():
 
         #for song in itertools.islice(self.client.playlistinfo(),self.playlist_start, self.playlist_start + (height - 2)):
         #"ugly" method for only getting enough item as the screen can handle
-        for index, song in enumerate(self.client.playlistinfo()[self.playlist_start: self.playlist_start + (height - 2)]):
+        for index, song in enumerate(self.client.playlistinfo()[self.playlist_start: self.playlist_start + (height - 2)], 0):
             # formating of the time for time column
             duration_min = str(int(song["time"]) // 60)
             duration_sec = str(int(song["time"]) % 60)

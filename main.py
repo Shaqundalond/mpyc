@@ -15,6 +15,7 @@ global client
 
 def main(stdscr):
     #setup for mpd
+    # TODO try catch implemetieren
     client = mpd.MPDClient(use_unicode=True)
     client.connect("localhost", 6600)
 
@@ -51,17 +52,17 @@ def main(stdscr):
         #stdscr.erase()
         if c in (curses.KEY_END, ord('!'), ord('q')):
             running = False
-        if c == ord('p'):
-            mainview.set_content(playlist)
-        if c == ord('c'):
-            mainview.set_content(colortest)
-        if c == curses.KEY_DOWN:
-            playlist.move_chosen_up()
         elif c == curses.KEY_RESIZE:
             height, width = stdscr.getmaxyx()
             topview.update_on_resize(0,0,3,width)
             mainview.update_on_resize(3,0,height-5,width)
             bottomview.update_on_resize(height-2,0,2,width)
+        elif c == ord('p'):
+            mainview.set_content(playlist)
+        elif c == ord('c'):
+            mainview.set_content(colortest)
+        elif c == curses.KEY_DOWN:
+            playlist.move_chosen_up()
 
         else:
             pass
@@ -69,8 +70,13 @@ def main(stdscr):
         mainview.render_content()
         bottomview.render_content()
 
+        topview.display_content()
+        mainview.display_content()
+        bottomview.display_content()
+
+
         c = stdscr.getch()
-        #time.sleep(0.100)
+        time.sleep(0.100)
 if __name__=='__main__':
     curses.wrapper(main)
 
