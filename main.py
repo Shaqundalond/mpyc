@@ -76,7 +76,7 @@ def main(stdscr):
 
 
         c = stdscr.getch()
-        time.sleep(0.100)
+        time.sleep(0.200)
 if __name__=='__main__':
     curses.wrapper(main)
 
