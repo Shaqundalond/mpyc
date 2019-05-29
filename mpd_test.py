@@ -12,7 +12,9 @@ client.connect("localhost", 6600)
 #    print("%s: %s" % (key, value))
 
 
-print(client.status())
-print(client.currentsong())
-#client.update()
+
+print(client.status()["playlistlength"])
+
+
+
 client.disconnect()

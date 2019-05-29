@@ -64,7 +64,7 @@ class Topbar:
             songtitle = currentsong["artist"] + " | "+ currentsong["title"]
             statestring = "Playing:"
             time_info = status["time"].split(":")
-            percent_per_char = 100/(width-3)
+            percent_per_char = 100/(width-1)
             mult = int((int(time_info[0])/int(time_info[1])*100)/percent_per_char)
         else:
             pass
@@ -80,7 +80,8 @@ class Topbar:
         window.addstr(0, width - 1 - len(logostring),logostring, curses.A_STANDOUT)
 
         window.hline(1,0,curses.ACS_HLINE | curses.color_pair(13) ,width)
-        window.addstr(1, 0, progressbar,curses.A_BOLD | curses.color_pair(3))
+        #[:width] is used to prevent pointer out of range
+        window.addstr(1, 0, progressbar[:width-1],curses.A_BOLD | curses.color_pair(3))
 
 class Commandline():
 
@@ -208,22 +209,44 @@ class Playlist():
             #index +=1
 
     def move_chosen_up(self):
-        if self.playlist_position_visual == self.window_height - 2 and self.playlist_position_in_list == int(self.playlist_length) -1 :
-            # two is used because top row 2 takes two rows
+        #check if last item is highlighted
+        if self.playlist_position_in_list == int(self.playlist_length) - 1:
+            # do nothing
             curses.beep()
+        # check if last item is visually reached
         elif  self.playlist_position_visual == self.window_height-3:
-            self.playlist_position_in_list += 1
-            self.playlist_start +=1
+            self.playlist_position_in_list += 1 #move to next item in array
+            self.playlist_start +=1 #shift visual playlist
+        # move "pointer" visually in array and visual further
         else:
             self.playlist_position_visual +=1
+            self.playlist_position_in_list +=1
 
     def move_chosen_down(self):
-        self.playlist_position_visual -=1
-        self.playlist_position_in_list -= 1
+        #check if first item is highlighted
+        if self.playlist_position_in_list == 0:
+            # do nothing
+            curses.beep()
+        # check if last item is visually reached
+        elif  self.playlist_position_visual == 0:
+            self.playlist_position_in_list -= 1 #move to next item in array
+            self.playlist_start -=1 #shift visual playlist
+        # move "pointer" visually in array and visual further
+        else:
+            self.playlist_position_visual -=1
+            self.playlist_position_in_list -=1
 
 
-    def play_chosen():
-        pass
+    def play_chosen(self):
+        self.client.play(self.playlist_position_in_list)
 
-    def pause():
+    def toggle_pause(self):
+        status = self.client.status()["state"]
+        #pause play stop
+        if status == "pause":
+            self.client.pause(0)
+        elif status == "play":
+            self.client.pause(1)
+
+    def stop():
         pass

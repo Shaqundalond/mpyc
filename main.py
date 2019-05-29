@@ -61,9 +61,14 @@ def main(stdscr):
             mainview.set_content(playlist)
         elif c == ord('c'):
             mainview.set_content(colortest)
+        elif c == ord(' '):
+            playlist.play_chosen()
+        elif c == ord('t'):
+            playlist.toggle_pause()
         elif c == curses.KEY_DOWN:
             playlist.move_chosen_up()
-
+        elif c == curses.KEY_UP:
+            playlist.move_chosen_down()
         else:
             pass
         topview.render_content()
