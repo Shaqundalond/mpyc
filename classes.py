@@ -39,7 +39,7 @@ class Topbar:
         self.client = client
 
     def render(self,pos_y,pos_x, height, width, window):
-        #needed for Sondata like title and time
+        #needed for Songdata like title and time
         currentsong = self.client.currentsong()
         status = self.client.status()
 
@@ -150,10 +150,14 @@ class Playlist():
         self.playlist_length = 0
 
     def render(self, pos_y, pos_x, height, width, window):
+
+
         #Stuff that needs to move into update
         self.window_width = width
         self.window_height = height
         self.playlist_length = self.client.status()["playlistlength"]
+
+
         # simple resizing or the resizing of the window
         # TODO more horizontal adaptive scaling to keep more of the Title in Focus
         size_artist = 10
@@ -165,7 +169,9 @@ class Playlist():
         start_pos_title = start_pos_track + size_track + 1
         start_pos_album = width - 1 - size_time - 1 - size_album
         start_pos_time = width - 1 - size_time
-        # Drawing of the Header
+        # End of stuff that needs to move into update
+
+        # Drawing of the Header in the table€ý,€ý,
         window.addstr(0,0,"Artist",self.titlestyle)
         window.addstr(0,start_pos_track,"Track",self.titlestyle)
         window.addstr(0,start_pos_title,"Title",self.titlestyle)
@@ -173,11 +179,9 @@ class Playlist():
         window.addstr(0,start_pos_time,"Time",self.titlestyle)
         window.hline(1,0,curses.ACS_HLINE | curses.color_pair(13),width)
 
-        #index = 0
-
-        #for song in itertools.islice(self.client.playlistinfo(),self.playlist_start, self.playlist_start + (height - 2)):
         #"ugly" method for only getting enough item as the screen can handle
         for index, song in enumerate(self.client.playlistinfo()[self.playlist_start: self.playlist_start + (height - 2)], 0):
+            #song is returned as dictionary
             # formating of the time for time column
             duration_min = str(int(song["time"]) // 60)
             duration_sec = str(int(song["time"]) % 60)
@@ -188,25 +192,53 @@ class Playlist():
 
             duration = str(duration_min) + ":" + str(duration_sec)
 
+
+            #check if Song Data is complete
+            if "artist" in song:
+                artist = song["artist"]
+            else:
+                artist = "<NULL>"
+
+            if "track" in song:
+                track = song["track"]
+            else:
+                track = "XX"
+
+            if "title" in song:
+                title = song["title"]
+            else:
+                title = song["file"].split("/")[-1]
+
+            if "album" in song:
+                album = song["album"]
+            else:
+                album = "<NULL>"
+
+
+            #setting the highlighting
             if self.playlist_position_visual == index:
                 textstyle = self.chosen
                 # simple hack to highlight the whole line_
                 # width -1 is needed for god knows why
                 # else the player breaks when hightlighting the last line
                 window.addstr(index + 2 ,0, " "*(width-1), self.chosen)
-                #except:
-                #print(index +2 ,"\n" ,self.window_height, "\n", self.playlist_position_visual)
 
             else:
                 textstyle = self.not_chosen
 
             # actual drawin of the Playlist Text
-            window.addstr(index + 2,0,song["artist"][:size_artist],textstyle | curses.color_pair(4))
-            window.addstr(index + 2,start_pos_track,song["track"][:size_track], textstyle | curses.color_pair(4))
-            window.addstr(index + 2,start_pos_title,song["title"][:size_title],textstyle | curses.color_pair(8))
-            window.addstr(index + 2,start_pos_album,song["album"][:size_album],textstyle | curses.color_pair(7))
-            window.addstr(index + 2,start_pos_time,duration[:size_time],textstyle | curses.color_pair(6))
-            #index +=1
+            window.addstr(index + 2,0, artist \
+                    [:size_artist],textstyle | curses.color_pair(4))
+            window.addstr(index + 2,start_pos_track, track  \
+                    [:size_track], textstyle | curses.color_pair(4))
+            window.addstr(index + 2,start_pos_title, title  \
+                    [:size_title],textstyle | curses.color_pair(8))
+            window.addstr(index + 2,start_pos_album, album \
+                    [:size_album],textstyle | curses.color_pair(7))
+            window.addstr(index + 2,start_pos_time,duration[:size_time] \
+                    ,textstyle | curses.color_pair(6))
+
+
 
     def move_chosen_up(self):
         #check if last item is highlighted
