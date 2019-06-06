@@ -3,6 +3,20 @@ A "simple" curses mpd client written in Python. It is a spiritual copy of ncmcpp
 
 ![MPyC](/img/mpyc.jpg)
 
+# Abilities
+## Basic Abilities
+* Display current Playlist
+* Acessing Library
+* Basic Media control:
+	* Play Pause Stop
+	* Shuffle
+	* Volume Control
+
+## Nice to have Abilities
+* Visualizer
+* Fetching Lyrics
+* Displaying Album Cover (Only in Terminal Emulator)
+
 
 # Requirements
 ## Python3
@@ -12,7 +26,7 @@ pip3 install pyhton-mpd2
 ```
 In some cases pip needs the --user flag to properly install the module
 
-##MPD
+## MPD
 mpyc uses mpd as daemon. MPD must be installed. For Debian-based systems run
 
 ```Bash
@@ -32,64 +46,26 @@ To start MPD run following command assuming you use systemd
 sudo systemctl start mpd.service
 ```
 
-# TODO
-## Allgemein
-* Update Funktion
-* Abfangen falls MPD nicht läuft
+# Tasks
+## General
+- [ ] Update function for mpd
+- [ ] catch if mpd is not running
 
-## MPD
-* MPD abspielen
-* MPD Playlist auslesen [done]
-
-## curses
-* HOTKEYS definieren
-* Klassen definieren fuer:
-	[done]Playlist x
-	[done]Library x
-	[done]Visualizer x
-	[done]Statusbar x
-	[done]Bottombar x
-
-## Statusbar
-* Current Song:
-	[done]benoetigt Time
-	[done]nimm Song String und schneide ihn mit [n:k] ab
-	[done]aktualisiere n und k nach X ticks
-	[done]k-n = width - reservierte Zeichen  (MpYC z.B)
-	Song titel als Laufschrift realisieren
-* Progress in Song:
-	100/width = % per width_unit
-
+## Library
+- [ ] query Library
+- [ ] display Library
+- [ ] add Folder to Playlist
 
 ## Bottombar
-* commandline
+- [ ] implement Commandmode:
+	- [ ] Search (Dependend on what Screen is showing)
+	- [ ]
 
 
 ## Playlist
-* Playlist anzeigen:
-	* farbliches Highlighten
-	* [deprecated] Scrollbar falls Playlist > window.height
-	* [done] Highlighting auf welchem Song ich bin
-
-* Playlist elemete loeschen
-* Playlist Elemente verschieben
-* Anpassen dass width/height per extrafunktion geupdatet wird
-* anzeigen von Bildern mittels Ueberzug
-*
-
-
-
-
-
-## Library
-* Library anzeigen
-* add Element to playlist
-* highlight multiple Elements
-* recursive Adding to playlist
-
+- [ ] make current Song bold
 
 ## Keyhandler
-* muss zwischen den Fenstern unterscheiden können
-* q for quit
-
+- [ ] implement Keyhandler
+- [ ] implement Keybindings (Vim)
 
