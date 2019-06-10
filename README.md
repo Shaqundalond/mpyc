@@ -50,11 +50,13 @@ sudo systemctl start mpd.service
 ## General
 - [ ] Update function for mpd
 - [ ] catch if mpd is not running
+- [ ] Volume Control
 
 ## Library
-- [ ] query Library
-- [ ] display Library
-- [ ] add Folder to Playlist
+- [ ] query Library:
+	- [ ] search for specific Items
+- [x] display Library
+- [x] add Folder to Playlist
 
 ## Bottombar
 - [ ] implement Commandmode:
@@ -69,3 +71,5 @@ sudo systemctl start mpd.service
 - [ ] implement Keyhandler
 - [ ] implement Keybindings (Vim)
 
+## Known Problems
+- [ ] Playlist does not get updated/refreshed automatically

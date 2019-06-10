@@ -50,10 +50,16 @@ def main(stdscr):
     c = None
     while running:
         #"KEYHANDLER"
+        # TODO cleanup for different windows
         #stdscr.erase()
         keypressed = True
+
         if c in (curses.KEY_END, ord('!'), ord('q')):
             running = False
+        elif c == curses.KEY_DOWN:
+            mainview.content.move_chosen_up()
+        elif c == curses.KEY_UP:
+            mainview.content.move_chosen_down()
         elif c == curses.KEY_RESIZE:
             height, width = stdscr.getmaxyx()
             topview.update_on_resize(0,0,3,width)
@@ -61,6 +67,7 @@ def main(stdscr):
             bottomview.update_on_resize(height-2,0,2,width)
         elif c == ord('1'):
             mainview.set_content(playlist)
+            mainview.content.get_playlist()
         elif c == ord('0'):
             mainview.set_content(colortest)
         elif c == ord('2'):
@@ -71,10 +78,26 @@ def main(stdscr):
             playlist.toggle_pause()
         elif c == ord('l'):#curses.KEY_ENTER and mainview.content_name == "Library":
             mainview.content.enter_directory()
-        elif c == curses.KEY_DOWN:
-            mainview.content.move_chosen_up()
-        elif c == curses.KEY_UP:
-            mainview.content.move_chosen_down()
+        elif c == 10 or c == 13:
+            message = mainview.content.add_directory()
+            bottomview.content.display(message)
+        elif c == ord('m'):
+            #make volume greater again
+            vol = int(client.status()["volume"])
+            if vol <=95:
+                vol += 5
+            if vol >95:
+                vol = 100
+            client.setvol(vol)
+            bottomview.content.display("Volume set to: " + str(vol) + "%")
+        elif c == ord('n'):
+            vol = int(client.status()["volume"])
+            if vol >=5:
+                vol -= 5
+            if vol <5:
+                vol = 0
+            client.setvol(vol)
+            bottomview.content.display("Volume set to: " + str(vol) + "%")
         else:
             keypressed = False
 

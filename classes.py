@@ -90,6 +90,7 @@ class Commandline():
     def __init__(self, client):
 
         self.client = client
+        self.message = ""
     def render(self, pos_y, pos_x, height, width, window):
 
         status = self.client.status()
@@ -114,7 +115,15 @@ class Commandline():
         songduration = "["+time_elapsed +"|"+ time_song +"]"
         window.hline(0,0,curses.ACS_HLINE | curses.color_pair(13),width)
         window.addstr(0, width - 1 - len(songduration),songduration, curses.A_BOLD | curses.color_pair(3))
-        window.addstr(1 ,1,"lel",curses.A_NORMAL)
+
+        if len(self.message) >= width -1:
+            self.message = self.message[:width-5] + "..."
+        window.addstr(1 ,1,self.message,curses.A_NORMAL)
+
+    def display(self, text):
+        self.message = text
+
+
 
 class ColorTest():
     def render(self, pos_y, pos_x, height, width, window):
@@ -255,9 +264,26 @@ class Library():
                 self.directory_start = 0
                 self.uri_last = self.uri
                 self.uri = tmp["directory"]
-    #TODO
+
     def add_directory(self):
-        pass
+        tmp = self.directory_list[self.directory_position_in_list]
+        if "directory" in tmp:
+            # for people like me who press the wrong key... FeelsBadMan
+            if tmp["directory"] == "..":
+                self.enter_directory()
+            item = tmp["directory"]
+            self.client.add(item)
+
+            return "Added : " + item
+        elif "file" in tmp:
+            item = tmp["file"]
+            self.client.add(item)
+            return "Added : " + item
+
+        else:
+            return "Coulnd't add item sometheing went wrong"
+
+
 
 class Lyrics():
     pass
@@ -274,6 +300,7 @@ class Playlist():
         self.window_width = 0
         self.window_height = 0
         self.playlist_length = 0
+        self.l_playlist = None
 
     def render(self, pos_y, pos_x, height, width, window):
 
@@ -306,7 +333,7 @@ class Playlist():
         window.hline(1,0,curses.ACS_HLINE | curses.color_pair(13),width)
 
         #"ugly" method for only getting enough item as the screen can handle
-        for index, song in enumerate(self.client.playlistinfo()[self.playlist_start: self.playlist_start + (height - 2)], 0):
+        for index, song in enumerate(self.l_playlist[self.playlist_start: self.playlist_start + (height - 2)], 0):
             #song is returned as dictionary
             # formating of the time for time column
             duration_min = str(int(song["time"]) // 60)
@@ -408,3 +435,6 @@ class Playlist():
 
     def stop():
         pass
+
+    def get_playlist(self):
+        self.l_playlist = self.client.playlistinfo()
