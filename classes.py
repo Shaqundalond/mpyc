@@ -294,6 +294,7 @@ class Playlist():
         self.titlestyle = curses.A_BOLD | curses.color_pair(2)
         self.chosen = curses.A_STANDOUT
         self.not_chosen = curses.A_NORMAL
+        self.current =  curses.A_BOLD
         self.playlist_position_visual = 0
         self.playlist_position_in_list = 0
         self.playlist_start = 0
@@ -308,7 +309,9 @@ class Playlist():
         #Stuff that needs to move into update
         self.window_width = width
         self.window_height = height
-        self.playlist_length = self.client.status()["playlistlength"]
+        self.l_client_status = self.client.status()
+        self.playlist_length = self.l_client_status["playlistlength"]
+        self.i_current_song = int(self.l_client_status["song"])
 
 
         # simple resizing or the resizing of the window
@@ -354,6 +357,8 @@ class Playlist():
 
             if "track" in song:
                 track = song["track"]
+                if len(track) == 1:
+                    track = "0" + track
             else:
                 track = "XX"
 
@@ -367,17 +372,20 @@ class Playlist():
             else:
                 album = "<NULL>"
 
+            # resetting Textstyle to XOR later
+            textstyle = curses.A_NORMAL
 
             #setting the highlighting
+            if (index + self.playlist_start) == self.i_current_song:
+                textstyle = textstyle | self.current
+
             if self.playlist_position_visual == index:
-                textstyle = self.chosen
+                textstyle = textstyle | self.chosen
                 # simple hack to highlight the whole line_
                 # width -1 is needed for god knows why
                 # else the player breaks when hightlighting the last line
                 window.addstr(index + 2 ,0, " "*(width-1), self.chosen)
 
-            else:
-                textstyle = self.not_chosen
 
             # actual drawin of the Playlist Text
             window.addstr(index + 2,0, artist \

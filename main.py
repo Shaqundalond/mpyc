@@ -48,6 +48,7 @@ def main(stdscr):
     curses.halfdelay(1)
     stdscr.refresh()
     c = None
+    #Mainloop
     while running:
         #"KEYHANDLER"
         # TODO cleanup for different windows
@@ -83,21 +84,31 @@ def main(stdscr):
             bottomview.content.display(message)
         elif c == ord('m'):
             #make volume greater again
-            vol = int(client.status()["volume"])
-            if vol <=95:
-                vol += 5
-            if vol >95:
-                vol = 100
-            client.setvol(vol)
-            bottomview.content.display("Volume set to: " + str(vol) + "%")
+            status = client.status()
+            if "volume" in client.status():
+                vol = int(status["volume"])
+                if vol <=95:
+                    vol += 5
+                if vol >95:
+                    vol = 100
+                client.setvol(vol)
+                message = "Volume set to: " + str(vol) + "%"
+            else:
+                message = "Can't set Volume, no softwaremixer available"
+            bottomview.content.display(message)
         elif c == ord('n'):
-            vol = int(client.status()["volume"])
-            if vol >=5:
-                vol -= 5
-            if vol <5:
-                vol = 0
-            client.setvol(vol)
-            bottomview.content.display("Volume set to: " + str(vol) + "%")
+            status = client.status()
+            if "volume" in client.status():
+                vol = int(status["volume"])
+                if vol >=5:
+                    vol -= 5
+                if vol <5:
+                    vol = 0
+                client.setvol(vol)
+                message = "Volume set to: " + str(vol) + "%"
+            else:
+                message = "Can't set Volume, no softwaremixer available"
+            bottomview.content.display(message)
         else:
             keypressed = False
 
