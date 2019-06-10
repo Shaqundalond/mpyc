@@ -44,12 +44,14 @@ def main(stdscr):
     global running
     running = True
 
-    curses.curs_set(0)
+    curses.curs_set(0)      # Hide The cursor
+    curses.halfdelay(1)
     stdscr.refresh()
     c = None
     while running:
-
+        #"KEYHANDLER"
         #stdscr.erase()
+        keypressed = True
         if c in (curses.KEY_END, ord('!'), ord('q')):
             running = False
         elif c == curses.KEY_RESIZE:
@@ -66,22 +68,28 @@ def main(stdscr):
         elif c == ord('t'):
             playlist.toggle_pause()
         elif c == curses.KEY_DOWN:
-            playlist.move_chosen_up()
+            mainview.content.move_chosen_up()
         elif c == curses.KEY_UP:
-            playlist.move_chosen_down()
+            mainview.content.move_chosen_down()
         else:
-            pass
+            keypressed = False
+
+
         topview.render_content()
-        mainview.render_content()
+        if keypressed:
+            mainview.render_content()
         bottomview.render_content()
 
         topview.display_content()
-        mainview.display_content()
+        if keypressed:
+            mainview.display_content()
         bottomview.display_content()
 
 
-        c = stdscr.getch()
-        time.sleep(0.200)
+        c = stdscr.getch() #get pressed Key
+        curses.flushinp() # Flush input to make curses store less keys
+        curses.napms(100)
+        #time.sleep(0.200)
 if __name__=='__main__':
     curses.wrapper(main)
 

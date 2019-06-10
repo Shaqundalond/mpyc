@@ -30,6 +30,7 @@ class viewport():
             pass
         else:
             self.content.render(self.pos_y, self.pos_x, self.height, self.width, self.screen)
+
     def display_content(self):
         self.screen.refresh()
 
