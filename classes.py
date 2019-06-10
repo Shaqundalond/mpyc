@@ -10,6 +10,7 @@ class viewport():
         self.height = height
         self.width = width
         self.content = content
+        self.content_name = content.__class__.__name__
         self.screen = curses.newwin(self.height,self.width,self.pos_y,self.pos_x)
 
     def update_on_resize(self,pos_y, pos_x, height, width):
@@ -132,7 +133,131 @@ class ColorTest():
         window.addstr(0,width//2, "Playlist", curses.color_pair(curses.COLOR_BLUE))
 
 class Library():
-    pass
+    def __init__(self, client):
+        self.client = client
+        self.titlestyle = curses.A_BOLD | curses.color_pair(2)
+        self.chosen = curses.A_STANDOUT
+        self.not_chosen = curses.A_NORMAL
+
+        # for current directory
+        self.directory_position_visual = 0          # position on the list displayed on screen [0..height]
+        self.directory_position_in_list = 0         # actual position in the queried list
+        self.directory_start = 0                    # position needed to offset the returned directory_list
+
+        self.l_directory_position_store = []
+        ''' contains
+        [0]self.uri
+        [1]self.uri_last
+        [2]self.directory_position_visual
+        [3]self.directory_position_in_list
+        [4]self.directory_start
+        as list to restore these values when traversing the directory-tree
+        '''
+        self.window_width = 0
+        self.window_height = 0
+        self.directory_length = 0
+        self.uri = ""
+        self.uri_last = None
+        self.directory = None
+
+
+
+    def render(self, pos_y, pos_x, height, width, window):
+
+        #Stuff that needs to move into update
+        self.window_width = width
+        self.window_height = height
+
+        if self.uri != "":
+            self.directory_list = [{"directory": ".." } ] + self.client.lsinfo(self.uri)
+        else:
+            self.directory_list =  self.client.lsinfo(self.uri)
+
+
+        self.directory_length = len(self.directory_list)
+
+
+        #"ugly" method for only getting enough item as the screen can handle
+        for index, library_item in enumerate(self.directory_list[self.directory_start: self.directory_start + height], 0):
+
+            a = 2
+            b= 3
+            if "directory" in library_item:
+                item = "[ " + library_item["directory"] + " ]"
+                #TODO Splice
+
+            elif "file" in library_item:
+                item = library_item["file"]
+
+            else:
+                item = "WTF"
+
+            if self.directory_position_visual == index:
+                textstyle = self.chosen
+            else:
+                textstyle = self.not_chosen
+
+
+
+            window.addstr(index,2, item, textstyle | curses.color_pair(2))
+            # ,textstyle | curses.color_pair(4))
+
+
+
+    def move_chosen_up(self):
+        #check if last item is highlighted
+        if self.directory_position_in_list == int(self.directory_length) - 1:
+            # do nothing
+            curses.beep()
+        # check if last item is visually reached
+        elif  self.directory_position_visual == self.window_height-1:
+            self.directory_position_in_list += 1 #move to next item in array
+            self.directory_start +=1 #shift visual directory
+        # move "pointer" visually in array and visual further
+        else:
+            self.directory_position_visual +=1
+            self.directory_position_in_list +=1
+
+    def move_chosen_down(self):
+        #check if first item is highlighted
+        if self.directory_position_in_list == 0:
+            # do nothing
+            curses.beep()
+        # check if last item is visually reached
+        elif  self.directory_position_visual == 0:
+            self.directory_position_in_list -= 1 #move to next item in array
+            self.directory_start -=1 #shift visual directory
+        # move "pointer" visually in array and visual further
+        else:
+            self.directory_position_visual -=1
+            self.directory_position_in_list -=1
+
+    def enter_directory(self):
+        #tmp used to keep my frigging long variable names shorter...
+        tmp = self.directory_list[self.directory_position_in_list]
+        if "directory" in tmp:
+            if tmp["directory"] == "..":
+                #restore stuff
+                last_directory = self.l_directory_position_store.pop()
+                self.uri = last_directory[0]
+                self.uri_last = last_directory[1]
+                self.directory_position_visual = last_directory[2]
+                self.directory_position_in_list = last_directory[3]
+                self.directory_start = last_directory[4]
+
+            else:
+                #Storing stuff
+                a = [self.uri, self.uri_last, self.directory_position_visual ,self.directory_position_in_list, self.directory_start]
+                self.l_directory_position_store.append(a)
+
+                self.directory_position_visual = 0
+                self.directory_position_in_list = 0
+                self.directory_start = 0
+                self.uri_last = self.uri
+                self.uri = tmp["directory"]
+    #TODO
+    def add_directory(self):
+        pass
 
 class Lyrics():
     pass

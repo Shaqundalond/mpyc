@@ -32,7 +32,7 @@ def main(stdscr):
     playlist = Playlist(client)
     lyrics = Lyrics()
     colortest = ColorTest()
-    library = Library()
+    library = Library(client)
 
     #setup initial terminalseparation
     height, width = stdscr.getmaxyx()
@@ -59,14 +59,18 @@ def main(stdscr):
             topview.update_on_resize(0,0,3,width)
             mainview.update_on_resize(3,0,height-5,width)
             bottomview.update_on_resize(height-2,0,2,width)
-        elif c == ord('p'):
+        elif c == ord('1'):
             mainview.set_content(playlist)
-        elif c == ord('c'):
+        elif c == ord('0'):
             mainview.set_content(colortest)
+        elif c == ord('2'):
+            mainview.set_content(library)
         elif c == ord(' '):
             playlist.play_chosen()
         elif c == ord('t'):
             playlist.toggle_pause()
+        elif c == ord('l'):#curses.KEY_ENTER and mainview.content_name == "Library":
+            mainview.content.enter_directory()
         elif c == curses.KEY_DOWN:
             mainview.content.move_chosen_up()
         elif c == curses.KEY_UP:
@@ -88,7 +92,8 @@ def main(stdscr):
 
         c = stdscr.getch() #get pressed Key
         curses.flushinp() # Flush input to make curses store less keys
-        curses.napms(100)
+        if not keypressed:
+            curses.napms(100)
         #time.sleep(0.200)
 if __name__=='__main__':
     curses.wrapper(main)
