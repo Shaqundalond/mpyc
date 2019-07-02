@@ -67,8 +67,8 @@ def main(stdscr):
             mainview.update_on_resize(3,0,height-5,width)
             bottomview.update_on_resize(height-2,0,2,width)
         elif c == ord('1'):
+            playlist.get_playlist()
             mainview.set_content(playlist)
-            mainview.content.get_playlist()
         elif c == ord('0'):
             mainview.set_content(colortest)
         elif c == ord('2'):

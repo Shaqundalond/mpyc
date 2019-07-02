@@ -1,0 +1,18 @@
+Informationen zum File Input/outputstream of fifo
+https://stackoverflow.com/questions/21762412/mpd-fifo-python-audioop-arduino-and-voltmeter-faking-a-vu-meter#21917356
+
+od -d2 /tmp/mpd.fifo
+Laut der Configdatei von MPD wird die FIFO mit 16bit (2byte) Signed Integern gefüllt. od nimmt nur byte Argumente an.
+
+pyhton
+read mpd.fifo mit sctruc <hhhhh aus
+
+
+Frequency Range	Frequency Values
+Sub-bass	20 to 60 Hz
+Bass	60 to 250 Hz
+Low midrange	250 to 500 Hz
+Midrange	500 Hz to 2 kHz
+Upper midrange	2 to 4 kHz
+Presence	4 to 6 kHz
+Brilliance	6 to 20 kHz
