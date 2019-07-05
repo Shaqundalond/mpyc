@@ -39,25 +39,27 @@ while True:
             right_channel.append(chunk_tuple[1])
 
             plt.ion() #activates interactive mode (non-blocking?)
-
-            if len(left_channel) == 2048*2:
+            samplesize = 44100
+            if len(left_channel) == 1024:
                 #FFT_Magic
                 #data = np.random.rand(301) - 0.5
                 data = np.array(left_channel)
                 left_channel =[]
-                ps = 2*np.log(np.abs(np.fft.rfft(data)))
+                ps = np.abs(np.fft.fft(data)/1024)
+                #ps = 20*np.log(np.abs(np.fft.fft(data)))
 
                 if time_step == None:
-                    time_step = 1 / (44100)
-                    freqs = np.fft.rfftfreq(data.size, time_step)
-                    idx = np.argsort(freqs)
+                    time_step = 1 / samplesize
+                    freqs = np.fft.fftfreq(data.size, time_step)
+                    #idx = np.argsort(freqs)
+                    mask = freqs > 20 # mask the complex conjugate frequencies and frequencies higher than 20Hz
                     fig = plt.figure()
-                    plt.ylim(0,50)
+                    plt.ylim(0,5000)
                     ax = fig.add_subplot(111)
-                    line1, =ax.plot(freqs[idx], ps[idx], 'r-')
+                    line1, =ax.plot(freqs[mask], ps[mask], 'r-')
                     #line1, =ax.plot(freqs[idx][:512], ps[idx][:512], 'r-') # 512 is used to truncate the higher frequencies
 
-                line1.set_ydata(ps[idx])
+                line1.set_ydata(ps[mask])
                 #line1.set_ydata(ps[idx][:512])
                 fig.canvas.draw()
                 fig.canvas.flush_events()
