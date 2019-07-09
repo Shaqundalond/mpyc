@@ -16,8 +16,11 @@ global client
 def main(stdscr):
     #setup for mpd
     # TODO try catch implemetieren
-    client = mpd.MPDClient(use_unicode=True)
-    client.connect("localhost", 6600)
+    try:
+        client = mpd.MPDClient(use_unicode=True)
+        client.connect("localhost", 6600)       # The socket is hardcoded and should rather be read from config file.
+    except:
+        client = None
 
     #initialize colors
     curses.start_color()
@@ -45,14 +48,14 @@ def main(stdscr):
     running = True
 
     curses.curs_set(0)      # Hide The cursor
-    curses.halfdelay(1)
-    stdscr.refresh()
-    c = None
+    curses.halfdelay(1)     # make curses.getch() wait for 1/10 of a second until returning None
+    stdscr.refresh()        # clear the screen for initial setup
+    c = None                # Iniitalize c for keystrokes
+
     #Mainloop
     while running:
         #"KEYHANDLER"
         # TODO cleanup for different windows
-        #stdscr.erase()
         keypressed = True
 
         if c in (curses.KEY_END, ord('!'), ord('q')):
@@ -112,12 +115,14 @@ def main(stdscr):
         else:
             keypressed = False
 
-
+        # Renderpart
         topview.render_content()
         if keypressed:
+            #mainview gets only updated on keypress
             mainview.render_content()
         bottomview.render_content()
 
+        # Display the rendered buffer to the terminal
         topview.display_content()
         if keypressed:
             mainview.display_content()
@@ -125,10 +130,13 @@ def main(stdscr):
 
 
         c = stdscr.getch() #get pressed Key
-        curses.flushinp() # Flush input to make curses store less keys
+        curses.flushinp() # Flush input to make curses store only one keystroke
         if not keypressed:
+            # sleep for 1/10 second to minimize processor load
             curses.napms(100)
-        #time.sleep(0.200)
+
+
 if __name__=='__main__':
+    #Inbuilt wrapper function to prevent garbling up the terminal
     curses.wrapper(main)
 

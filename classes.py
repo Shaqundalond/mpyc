@@ -5,26 +5,42 @@ import mpd
 class viewport():
 
     def __init__(self, pos_y, pos_x, height, width, content=None):
-        self.pos_y = pos_y
-        self.pos_x = pos_x
+        '''
+        The Coordinates used for curses use the coordinate
+        system established by cathode ray tubes.
+        X gets bigger from left to right
+        Y gets bigger from top to bottom
+        Upper left corner is (0/0)
+        '''
+        self.pos_y = pos_y      #y Coordinate in the terminal
+        self.pos_x = pos_x      #x Coordinate in the terminal
         self.height = height
         self.width = width
-        self.content = content
+        self.content = content  # Variable used to store the crrent class that is displayed
         self.content_name = content.__class__.__name__
-        self.screen = curses.newwin(self.height,self.width,self.pos_y,self.pos_x)
+        self.screen = curses.newwin(self.height,self.width,self.pos_y,self.pos_x) # create new sudwindow to draw to.
 
     def update_on_resize(self,pos_y, pos_x, height, width):
+        '''
+        function used to resize and move the window to the proper new positions after the terminal gets resize
+        '''
         self.height = height
         self.width = width
         self.pos_y = pos_y
         self.pos_x = pos_x
+
+        # curses function to update the screen
         self.screen.resize(self.height,self.width)
         self.screen.mvwin(self.pos_y,self.pos_x)
 
     def set_content(self, content):
+        '''
+        function used for changing the content of the view (ntil now only used for mainview)
+        '''
         self.content = content
 
     def render_content(self):
+        # clear the screen to prevent artifacts from last frame
         self.screen.erase()
         if self.content == None:
             #self.screen.box()
@@ -41,16 +57,24 @@ class Topbar:
         self.client = client
 
     def render(self,pos_y,pos_x, height, width, window):
-        #needed for Songdata like title and time
-        currentsong = self.client.currentsong()
-        status = self.client.status()
-
         #constant data
         logostring =  " MPyC "
         mid_pos = width//2
 
+        #initial check if client is up
+        if self.client == None:
+            window.addstr(0,3 ,"Client not running", curses.A_BLINK)
+            window.addstr(0, width - 1 - len(logostring),logostring, curses.A_STANDOUT)
+            window.hline(1,0,curses.ACS_HLINE | curses.color_pair(13) ,width)
+            return
+
+        #needed for Songdata like title and time
+        currentsong = self.client.currentsong()
+        status = self.client.status() # dicitonary with a lot of useful information
+
         #TODO scrolling Text
         #TODO adaptiv removing Paused and MPyC
+
         #get and define important Data to display
         if status["state"] == "stop":
             songtitle = "No Song playing"
@@ -90,8 +114,15 @@ class Commandline():
     def __init__(self, client):
 
         self.client = client
-        self.message = ""
+        self.message = "" # String used to display Data from keystrokes
     def render(self, pos_y, pos_x, height, width, window):
+
+        #initial check if client is up
+        if self.client == None:
+            window.addstr(1,3 ,"Client not running", curses.A_BLINK)
+            window.hline(0,0,curses.ACS_HLINE | curses.color_pair(13),width)
+            return
+
 
         status = self.client.status()
         if status["state"] == "stop":
@@ -177,7 +208,9 @@ class Library():
         self.window_width = width
         self.window_height = height
 
-        if self.uri != "":
+        if self.client == None:
+            self.directory_list = []
+        elif self.uri != "":
             self.directory_list = [{"directory": ".." } ] + self.client.lsinfo(self.uri)
         else:
             self.directory_list =  self.client.lsinfo(self.uri)
@@ -205,9 +238,6 @@ class Library():
                 textstyle = self.chosen
             else:
                 textstyle = self.not_chosen
-
-
-
             window.addstr(index,2, item, textstyle | curses.color_pair(2))
             # ,textstyle | curses.color_pair(4))
 
@@ -305,13 +335,13 @@ class Playlist():
 
     def render(self, pos_y, pos_x, height, width, window):
 
-
-        #Stuff that needs to move into update
+        #Stuff that needs to move into update to reduce CPU Load
         self.window_width = width
         self.window_height = height
-        self.l_client_status = self.client.status()
-        self.playlist_length = self.l_client_status["playlistlength"]
-        self.i_current_song = int(self.l_client_status["song"])
+        if self.client != None:
+            self.l_client_status = self.client.status()
+            self.playlist_length = self.l_client_status["playlistlength"]
+            self.i_current_song = int(self.l_client_status["song"])
 
 
         # simple resizing or the resizing of the window
@@ -325,7 +355,6 @@ class Playlist():
         start_pos_title = start_pos_track + size_track + 1
         start_pos_album = width - 1 - size_time - 1 - size_album
         start_pos_time = width - 1 - size_time
-        # End of stuff that needs to move into update
 
         # Drawing of the Header in the table€ý,€ý,
         window.addstr(0,0,"Artist",self.titlestyle)
@@ -334,6 +363,7 @@ class Playlist():
         window.addstr(0,start_pos_album,"Album",self.titlestyle)
         window.addstr(0,start_pos_time,"Time",self.titlestyle)
         window.hline(1,0,curses.ACS_HLINE | curses.color_pair(13),width)
+        # End of stuff that needs to move into update
 
         #"ugly" method for only getting enough item as the screen can handle
         for index, song in enumerate(self.l_playlist[self.playlist_start: self.playlist_start + (height - 2)], 0):
@@ -349,7 +379,7 @@ class Playlist():
             duration = str(duration_min) + ":" + str(duration_sec)
 
 
-            #check if Song Data is complete
+            #check if Song Data is complete else replace it with ugly NULL
             if "artist" in song:
                 artist = song["artist"]
             else:
@@ -387,7 +417,7 @@ class Playlist():
                 window.addstr(index + 2 ,0, " "*(width-1), self.chosen)
 
 
-            # actual drawin of the Playlist Text
+            # actual drawing of the Playlist Text
             window.addstr(index + 2,0, artist \
                     [:size_artist],textstyle | curses.color_pair(4))
             window.addstr(index + 2,start_pos_track, track  \
@@ -445,4 +475,7 @@ class Playlist():
         pass
 
     def get_playlist(self):
-        self.l_playlist = self.client.playlistinfo()
+        if self.client == None:
+            self.l_playlist = []
+        else:
+            self.l_playlist = self.client.playlistinfo()
