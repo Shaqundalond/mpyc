@@ -9,11 +9,70 @@ hotkey_attr = curses.A_BOLD | curses.A_UNDERLINE
 menu_attr = curses.A_NORMAL
 
 #MPD DATA
-global client
+#global client
 
 
 
 def main(stdscr):
+    running = True
+    # Define functions for easier keyhandling.
+    # Yes it is a makeshift class that I tried to prevent...
+    def terminate():
+        nonlocal running
+        running = False
+
+    def resize():
+        nonlocal height, width, topview, mainview, bottomview, stdscr
+        height, width = stdscr.getmaxyx()
+        topview.update_on_resize(0,0,3,width)
+        mainview.update_on_resize(3,0,height-5,width)
+        bottomview.update_on_resize(height-2,0,2,width)
+
+    def to_library():
+        nonlocal library, mainview,  d_functionkeys_window
+        d_functionkeys_window = library.get_keys()
+        playlist.get_playlist()
+        mainview.set_content(library)
+
+    def to_playlist():
+        nonlocal playlist, mainview, d_functionkeys_window
+        d_functionkeys_window = playlist.get_keys()
+        playlist.get_playlist()
+        mainview.set_content(playlist)
+
+    def volume_up():
+        nonlocal client, bottomview
+        status = client.status()
+        if "volume" in client.status():
+            vol = int(status["volume"])
+            if vol <=95:
+                 vol += 5
+            if vol >95:
+                vol = 100
+            client.setvol(vol)
+            message = "Volume set to: " + str(vol) + "%"
+        else:
+            message = "Can't set Volume, no softwaremixer available"
+        bottomview.content.display(message)
+
+    def volume_down():
+        nonlocal client, bottomview
+        status = client.status()
+        if "volume" in client.status():
+            vol = int(status["volume"])
+            if vol >=5:
+                 vol -= 5
+            if vol <5:
+                vol = 0
+            client.setvol(vol)
+            message = "Volume set to: " + str(vol) + "%"
+        else:
+            message = "Can't set Volume, no softwaremixer available"
+        bottomview.content.display(message)
+
+
+
+
     #setup for mpd
     # TODO try catch implemetieren
     try:
@@ -25,6 +84,7 @@ def main(stdscr):
     #initialize colors
     curses.start_color()
     curses.use_default_colors()
+    # initialize all colors because I'm lazy
     for i in range(0, curses.COLORS):
         curses.init_pair(i + 1, i, -1)
 
@@ -44,74 +104,34 @@ def main(stdscr):
     bottomview = viewport(height-2,0,2,width, Commandline(client))
 
 
-    global running
-    running = True
+
 
     curses.curs_set(0)      # Hide The cursor
     curses.halfdelay(1)     # make curses.getch() wait for 1/10 of a second until returning None
     stdscr.refresh()        # clear the screen for initial setup
     c = None                # Iniitalize c for keystrokes
+    d_functionkeys_main = {
+            ord('q'):terminate,
+            curses.KEY_RESIZE:resize,
+            ord('1'):to_playlist,
+            ord('2'):to_library,
+            ord('p'):playlist.toggle_pause,
+            ord('+'):volume_up,
+            ord('-'):volume_down
 
+            }
+    #d_functionkeys = d_functionkeys_main # workaround to append other dictionaries to the main one
+    d_functionkeys_window = {}
     #Mainloop
     while running:
         #"KEYHANDLER"
         # TODO cleanup for different windows
-        keypressed = True
+        keypressed = True # Boolean to store valid keypress
 
-        if c in (curses.KEY_END, ord('!'), ord('q')):
-            running = False
-        elif c == curses.KEY_DOWN:
-            mainview.content.move_chosen_up()
-        elif c == curses.KEY_UP:
-            mainview.content.move_chosen_down()
-        elif c == curses.KEY_RESIZE:
-            height, width = stdscr.getmaxyx()
-            topview.update_on_resize(0,0,3,width)
-            mainview.update_on_resize(3,0,height-5,width)
-            bottomview.update_on_resize(height-2,0,2,width)
-        elif c == ord('1'):
-            playlist.get_playlist()
-            mainview.set_content(playlist)
-        elif c == ord('0'):
-            mainview.set_content(colortest)
-        elif c == ord('2'):
-            mainview.set_content(library)
-        elif c == ord(' '):
-            playlist.play_chosen()
-        elif c == ord('t'):
-            playlist.toggle_pause()
-        elif c == ord('l'):#curses.KEY_ENTER and mainview.content_name == "Library":
-            mainview.content.enter_directory()
-        elif c == 10 or c == 13:
-            message = mainview.content.add_directory()
-            bottomview.content.display(message)
-        elif c == ord('m'):
-            #make volume greater again
-            status = client.status()
-            if "volume" in client.status():
-                vol = int(status["volume"])
-                if vol <=95:
-                    vol += 5
-                if vol >95:
-                    vol = 100
-                client.setvol(vol)
-                message = "Volume set to: " + str(vol) + "%"
-            else:
-                message = "Can't set Volume, no softwaremixer available"
-            bottomview.content.display(message)
-        elif c == ord('n'):
-            status = client.status()
-            if "volume" in client.status():
-                vol = int(status["volume"])
-                if vol >=5:
-                    vol -= 5
-                if vol <5:
-                    vol = 0
-                client.setvol(vol)
-                message = "Volume set to: " + str(vol) + "%"
-            else:
-                message = "Can't set Volume, no softwaremixer available"
-            bottomview.content.display(message)
+        if c in d_functionkeys_main:
+            d_functionkeys_main[c]()
+        elif c in d_functionkeys_window:
+            d_functionkeys_window[c]()
         else:
             keypressed = False
 

@@ -95,7 +95,7 @@ class Topbar:
         else:
             pass
 
-
+        songtitle = songtitle[:width]
         len_songtitle = len(songtitle)
         progressbar = "="*mult + ">"
 
@@ -201,6 +201,21 @@ class Library():
         self.directory = None
 
 
+        self.d_keys = {
+            #Arrow keys
+            curses.KEY_UP : self.move_chosen_down,
+            curses.KEY_DOWN : self.move_chosen_up,
+            curses.KEY_RIGHT : self.enter_directory,
+            curses.KEY_LEFT : self.return_directory,
+            curses.KEY_ENTER : self.add_directory,
+            #VIM Keys
+            ord('j') : self.move_chosen_up,
+            ord('k') : self.move_chosen_down,
+            ord('l') : self.enter_directory,
+            ord('h') : self.return_directory,
+            ord(' ') : self.add_directory
+            }
+
 
     def render(self, pos_y, pos_x, height, width, window):
 
@@ -270,20 +285,22 @@ class Library():
         else:
             self.directory_position_visual -=1
             self.directory_position_in_list -=1
+    def return_directory(self):
+        if len(self.l_directory_position_store) != 0:
+            # restore old lists
+            last_directory = self.l_directory_position_store.pop()
+            self.uri = last_directory[0]
+            self.uri_last = last_directory[1]
+            self.directory_position_visual = last_directory[2]
+            self.directory_position_in_list = last_directory[3]
+            self.directory_start = last_directory[4]
 
     def enter_directory(self):
         #tmp used to keep my frigging long variable names shorter...
         tmp = self.directory_list[self.directory_position_in_list]
         if "directory" in tmp:
             if tmp["directory"] == "..":
-                #restore stuff
-                last_directory = self.l_directory_position_store.pop()
-                self.uri = last_directory[0]
-                self.uri_last = last_directory[1]
-                self.directory_position_visual = last_directory[2]
-                self.directory_position_in_list = last_directory[3]
-                self.directory_start = last_directory[4]
-
+                self.return_directory()
             else:
                 #Storing stuff
                 a = [self.uri, self.uri_last, self.directory_position_visual ,self.directory_position_in_list, self.directory_start]
@@ -313,6 +330,8 @@ class Library():
         else:
             return "Coulnd't add item sometheing went wrong"
 
+    def get_keys(self):
+        return self.d_keys
 
 
 class Lyrics():
@@ -330,8 +349,16 @@ class Playlist():
         self.playlist_start = 0
         self.window_width = 0
         self.window_height = 0
-        self.playlist_length = 0
+        self.s_playlist_length = 0
         self.l_playlist = None
+        self.d_keys = {
+                 curses.KEY_UP:self.move_chosen_down,
+                 curses.KEY_DOWN:self.move_chosen_up,
+                 curses.KEY_ENTER : self.play_chosen,
+                 ord(' ') : self.play_chosen,
+                 ord('d') : self.delete_chosen
+                 # maybe move
+                }
 
     def render(self, pos_y, pos_x, height, width, window):
 
@@ -340,9 +367,12 @@ class Playlist():
         self.window_height = height
         if self.client != None:
             self.l_client_status = self.client.status()
-            self.playlist_length = self.l_client_status["playlistlength"]
-            self.i_current_song = int(self.l_client_status["song"])
-
+            self.s_playlist_length = self.l_client_status["playlistlength"]
+            if int(self.s_playlist_length) > 0:
+                try:
+                    self.i_current_song = int(self.l_client_status["song"])
+                except:
+                    self.i_current_song = -1
 
         # simple resizing or the resizing of the window
         # TODO more horizontal adaptive scaling to keep more of the Title in Focus
@@ -433,7 +463,7 @@ class Playlist():
 
     def move_chosen_up(self):
         #check if last item is highlighted
-        if self.playlist_position_in_list == int(self.playlist_length) - 1:
+        if self.playlist_position_in_list == int(self.s_playlist_length) - 1:
             # do nothing
             curses.beep()
         # check if last item is visually reached
@@ -463,6 +493,10 @@ class Playlist():
     def play_chosen(self):
         self.client.play(self.playlist_position_in_list)
 
+    def delete_chosen(self):
+        self.client.delete(self.playlist_position_in_list)
+        self.l_playlist = self.client.playlistinfo()
+
     def toggle_pause(self):
         status = self.client.status()["state"]
         #pause play stop
@@ -479,3 +513,6 @@ class Playlist():
             self.l_playlist = []
         else:
             self.l_playlist = self.client.playlistinfo()
+
+    def get_keys(self):
+        return self.d_keys
