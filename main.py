@@ -4,19 +4,10 @@ import time
 import mpd
 from classes import viewport , Topbar, Commandline, ColorTest, Playlist, Lyrics, Library
 
-#-- Define the appearance of some interface elements
-hotkey_attr = curses.A_BOLD | curses.A_UNDERLINE
-menu_attr = curses.A_NORMAL
-
-#MPD DATA
-#global client
-
-
 
 def main(stdscr):
-    running = True
-    # Define functions for easier keyhandling.
-    # Yes it is a makeshift class that I tried to prevent...
+    # Define functions used by keyhandler.
+    # Yes it is a makeshift class that I tried to prevent to reate...
     def terminate():
         nonlocal running
         running = False
@@ -70,62 +61,113 @@ def main(stdscr):
             message = "Can't set Volume, no softwaremixer available"
         bottomview.content.display(message)
 
+    def next_song():
+        if client != None:
+            client.next()
+
+    def prev_song():
+        if client != None:
+            client.previous()
+
+    def random():
+        if client != None:
+            a = bottomview.content.update_playback(0x2)
+            client.random(1) if a > 0 else client.random(0)
+
+    def consume():
+        if client != None:
+            a = bottomview.content.update_playback(0x8)
+            client.consume(1) if a else client.consume(0)
+
+    def single():
+        if client != None:
+            a = bottomview.content.update_playback(0x4)
+            client.single(1) if a else client.consume(0)
+
+    def repeat():
+        if client != None:
+            a =bottomview.content.update_playback(0x1)
+            client.repeat(1) if a else client.repeat(0)
 
 
 
-    #setup for mpd
-    # TODO try catch implemetieren
+    #################
+    # Setup for mpd #
+    #################
     try:
         client = mpd.MPDClient(use_unicode=True)
         client.connect("localhost", 6600)       # The socket is hardcoded and should rather be read from config file.
     except:
         client = None
 
-    #initialize colors
+
+    ############################
+    # Setup  Curses and Colors #
+    ############################
+
     curses.start_color()
     curses.use_default_colors()
     # initialize all colors because I'm lazy
     for i in range(0, curses.COLORS):
         curses.init_pair(i + 1, i, -1)
 
+    curses.curs_set(0)      # Hide The cursor
+    stdscr.nodelay(1)       #Used to make .getch() not wait for a keysroke
+    curses.halfdelay(1)     # make curses.getch() wait for 1/10 second until returning None
+    stdscr.refresh()        # clear the screen for initial setup
+    c = None                # Iniitalize c for keystrokes
+    height, width = stdscr.getmaxyx()
 
-    stdscr.nodelay(1)   #Used to make .getch() not wait for a keysroke
 
-    #create all mainviewclasses
+    ######################
+    # Initialize Classes #
+    ######################
+
     playlist = Playlist(client)
     lyrics = Lyrics()
     colortest = ColorTest()
     library = Library(client)
 
-    #setup initial terminalseparation
-    height, width = stdscr.getmaxyx()
     topview = viewport(0,0,2,width, Topbar(client))
     mainview= viewport(2,0,height-4,width)
     bottomview = viewport(height-2,0,2,width, Commandline(client))
 
 
+    ####################
+    # Setup Keyhandler #
+    ####################
 
-
-    curses.curs_set(0)      # Hide The cursor
-    curses.halfdelay(1)     # make curses.getch() wait for 1/10 of a second until returning None
-    stdscr.refresh()        # clear the screen for initial setup
-    c = None                # Iniitalize c for keystrokes
+    # The dictionaries store the adresses of the functions
+    # That will be called on Keypress
     d_functionkeys_main = {
-            ord('q'):terminate,
-            curses.KEY_RESIZE:resize,
-            ord('1'):to_playlist,
-            ord('2'):to_library,
-            ord('p'):playlist.toggle_pause,
-            ord('+'):volume_up,
-            ord('-'):volume_down
-
+            ord('q') : terminate,
+            curses.KEY_RESIZE : resize,
+            # Movement controls
+            ord('1') : to_playlist,
+            ord('2') : to_library,
+            #ord('3') : to_help,
+            #General Musicplayer controls
+            ord('p') : playlist.toggle_pause,
+            ord('+') : volume_up,
+            ord('-') : volume_down,
+            ord('>') : next_song,
+            ord('<') : prev_song,
+            ord('r') : random,
+            ord('c') : consume,
+            ord('s') : single,
+            ord('w') : repeat,
             }
-    #d_functionkeys = d_functionkeys_main # workaround to append other dictionaries to the main one
+
     d_functionkeys_window = {}
-    #Mainloop
+
+
+    ############
+    # Mainloop #
+    ############
+
+    running = True
     while running:
         #"KEYHANDLER"
-        # TODO cleanup for different windows
         keypressed = True # Boolean to store valid keypress
 
         if c in d_functionkeys_main:

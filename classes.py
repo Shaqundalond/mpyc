@@ -115,6 +115,21 @@ class Commandline():
 
         self.client = client
         self.message = "" # String used to display Data from keystrokes
+        tmp_status = self.client.status()
+        tmp_playback = [tmp_status["repeat"],tmp_status["random"],tmp_status["single"],tmp_status["consume"]]
+        tmp_shifter = 0x1
+        self.playback_array = ['w','r','s','c']
+
+        #This is for me to use bitshifting
+        #consume(c)-single(s)-random(r)repeat(w) LSB is right
+        self.playback = 0x0
+        for x in tmp_playback:
+            if x == "1":
+                self.playback = self.playback ^ self.shifter
+            self.shifter = tmp_shifter << 1
+
+
+
     def render(self, pos_y, pos_x, height, width, window):
 
         #initial check if client is up
@@ -125,6 +140,8 @@ class Commandline():
 
 
         status = self.client.status()
+
+
         if status["state"] == "stop":
             time_elapsed = "x"
             time_song = "x"
@@ -144,8 +161,23 @@ class Commandline():
             time_song = time_song_min + ":" + time_song_sec
 
         songduration = "["+time_elapsed +"|"+ time_song +"]"
+
+        tmp_playback  = self.playback
+        s_playback = "["
+        for i in self.playback_array:
+            if tmp_playback & 0x1 == 0x1:
+                s_playback += i
+            else:
+                s_playback += "-"
+            tmp_playback = tmp_playback >>1
+
+        s_playback += "]"
+
+
+
         window.hline(0,0,curses.ACS_HLINE | curses.color_pair(13),width)
-        window.addstr(0, width - 1 - len(songduration),songduration, curses.A_BOLD | curses.color_pair(3))
+        window.addstr(0, width - 1 - len(songduration),songduration, curses.A_BOLD | curses.color_pair(3)) #Songduration
+        window.addstr(0, 2, s_playback, curses.A_BOLD | curses.color_pair(3))
 
         if len(self.message) >= width -1:
             self.message = self.message[:width-5] + "..."
@@ -154,6 +186,9 @@ class Commandline():
     def display(self, text):
         self.message = text
 
+    def update_playback(self, a):
+        self.playback = self.playback ^ a
+        return int(self.playback & a)
 
 
 class ColorTest():
