@@ -72,7 +72,7 @@ def main(stdscr):
     def random():
         if client != None:
             a = bottomview.content.update_playback(0x2)
-            client.random(1) if a > 0 else client.random(0)
+            client.random(1) if a else client.random(0)
 
     def consume():
         if client != None:
@@ -82,7 +82,7 @@ def main(stdscr):
     def single():
         if client != None:
             a = bottomview.content.update_playback(0x4)
-            client.single(1) if a else client.consume(0)
+            client.single(1) if a else client.single(0)
 
     def repeat():
         if client != None:

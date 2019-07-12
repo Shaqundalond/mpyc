@@ -118,15 +118,15 @@ class Commandline():
         tmp_status = self.client.status()
         tmp_playback = [tmp_status["repeat"],tmp_status["random"],tmp_status["single"],tmp_status["consume"]]
         tmp_shifter = 0x1
-        self.playback_array = ['w','r','s','c']
+        self.playback_array = ['w','r','s','c'] # LSB is left
 
         #This is for me to use bitshifting
         #consume(c)-single(s)-random(r)repeat(w) LSB is right
         self.playback = 0x0
         for x in tmp_playback:
             if x == "1":
-                self.playback = self.playback ^ self.shifter
-            self.shifter = tmp_shifter << 1
+                self.playback ^= tmp_shifter
+            tmp_shifter <<= 1
 
 
 
@@ -169,7 +169,7 @@ class Commandline():
                 s_playback += i
             else:
                 s_playback += "-"
-            tmp_playback = tmp_playback >>1
+            tmp_playback >>= 1
 
         s_playback += "]"
 
@@ -187,7 +187,7 @@ class Commandline():
         self.message = text
 
     def update_playback(self, a):
-        self.playback = self.playback ^ a
+        self.playback ^= a
         return int(self.playback & a)
 
 
@@ -389,7 +389,7 @@ class Playlist():
         self.d_keys = {
                  curses.KEY_UP:self.move_chosen_down,
                  curses.KEY_DOWN:self.move_chosen_up,
-                 curses.KEY_ENTER : self.play_chosen,
+                 ord('\n') : self.play_chosen,
                  ord(' ') : self.play_chosen,
                  ord('d') : self.delete_chosen
                  # maybe move
