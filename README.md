@@ -49,8 +49,8 @@ sudo systemctl start mpd.service
 # Tasks
 ## General
 - [ ] Update function for mpd
-- [ ] catch if mpd is not running
-- [ ] Volume Control
+- [x] catch if mpd is not running
+- [x] Volume Control
 
 ## Library
 - [ ] query Library:
@@ -65,11 +65,11 @@ sudo systemctl start mpd.service
 
 
 ## Playlist
-- [ ] make current Song bold
+- [x] make current Song bold
 
 ## Keyhandler
-- [ ] implement Keyhandler
-- [ ] implement Keybindings (Vim)
+- [x] implement Keyhandler
+- [x] implement Keybindings (Vim)
 
 ## Known Problems
 - [ ] Playlist does not get updated/refreshed automatically

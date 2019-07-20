@@ -2,7 +2,8 @@
 import curses, traceback, string, os
 import time
 import mpd
-from classes import viewport , Topbar, Commandline, ColorTest, Playlist, Lyrics, Library
+import threading
+from classes import viewport , Topbar, Commandline, ColorTest, Playlist, Lyrics, Library, Help
 
 
 def main(stdscr):
@@ -12,6 +13,7 @@ def main(stdscr):
         nonlocal running
         running = False
 
+
     def resize():
         nonlocal height, width, topview, mainview, bottomview, stdscr
         height, width = stdscr.getmaxyx()
@@ -19,17 +21,20 @@ def main(stdscr):
         mainview.update_on_resize(3,0,height-5,width)
         bottomview.update_on_resize(height-2,0,2,width)
 
+
     def to_library():
         nonlocal library, mainview,  d_functionkeys_window
         d_functionkeys_window = library.get_keys()
         playlist.get_playlist()
         mainview.set_content(library)
 
+
     def to_playlist():
         nonlocal playlist, mainview, d_functionkeys_window
         d_functionkeys_window = playlist.get_keys()
         playlist.get_playlist()
         mainview.set_content(playlist)
+
 
     def volume_up():
         nonlocal client, bottomview
@@ -46,6 +51,7 @@ def main(stdscr):
             message = "Can't set Volume, no softwaremixer available"
         bottomview.content.display(message)
 
+
     def volume_down():
         nonlocal client, bottomview
         status = client.status()
@@ -61,34 +67,44 @@ def main(stdscr):
             message = "Can't set Volume, no softwaremixer available"
         bottomview.content.display(message)
 
+
     def next_song():
         if client != None:
             client.next()
 
+
     def prev_song():
         if client != None:
             client.previous()
+
 
     def random():
         if client != None:
             a = bottomview.content.update_playback(0x2)
             client.random(1) if a else client.random(0)
 
+
     def consume():
         if client != None:
             a = bottomview.content.update_playback(0x8)
             client.consume(1) if a else client.consume(0)
+
 
     def single():
         if client != None:
             a = bottomview.content.update_playback(0x4)
             client.single(1) if a else client.single(0)
 
+
     def repeat():
         if client != None:
             a =bottomview.content.update_playback(0x1)
             client.repeat(1) if a else client.repeat(0)
 
+
+    def search():
+        x.start()
+        #x.join()
 
 
     #################
@@ -122,16 +138,18 @@ def main(stdscr):
     ######################
     # Initialize Classes #
     ######################
-
+    help_screen = Help()
     playlist = Playlist(client)
     lyrics = Lyrics()
     colortest = ColorTest()
     library = Library(client)
 
     topview = viewport(0,0,2,width, Topbar(client))
-    mainview= viewport(2,0,height-4,width)
+    mainview= viewport(2,0,height-4,width, help_screen)
     bottomview = viewport(height-2,0,2,width, Commandline(client))
 
+    # Ugly thread for keyinput
+    x = threading.Thread(target=bottomview.content.get_input ,args = (height, width))
 
     ####################
     # Setup Keyhandler #
@@ -156,6 +174,8 @@ def main(stdscr):
             ord('c') : consume,
             ord('s') : single,
             ord('w') : repeat,
+            ord('/') : search,
+            #ord('u') : update
             }
 
     d_functionkeys_window = {}
@@ -164,7 +184,7 @@ def main(stdscr):
     ############
     # Mainloop #
     ############
-
+    #counter = 0
     running = True
     while running:
         #"KEYHANDLER"
@@ -179,23 +199,20 @@ def main(stdscr):
 
         # Renderpart
         topview.render_content()
-        if keypressed:
-            #mainview gets only updated on keypress
-            mainview.render_content()
+        mainview.render_content()
         bottomview.render_content()
 
         # Display the rendered buffer to the terminal
         topview.display_content()
-        if keypressed:
-            mainview.display_content()
+        mainview.display_content()
         bottomview.display_content()
 
 
         c = stdscr.getch() #get pressed Key
         curses.flushinp() # Flush input to make curses store only one keystroke
         if not keypressed:
-            # sleep for 1/10 second to minimize processor load
-            curses.napms(100)
+            # sleep for 1/25 second to minimize processor load
+            curses.napms(40)
 
 
 if __name__=='__main__':

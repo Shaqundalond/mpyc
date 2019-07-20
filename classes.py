@@ -51,6 +51,20 @@ class viewport():
     def display_content(self):
         self.screen.refresh()
 
+class Help():
+    def __init__(self):
+        #TODO try catch
+        f= open('helpscreen', 'r')
+        lines = f.readlines()
+        self.properlines = [line.strip('\n') for line in lines ]
+        f.close()
+
+    def render(self,pos_y,pos_x, height, width, window):
+        for index, line in enumerate(self.properlines[:height]):
+            window.addstr(index,0,line)
+
+
+
 
 class Topbar:
     def __init__(self, client):
@@ -115,13 +129,16 @@ class Commandline():
 
         self.client = client
         self.message = "" # String used to display Data from keystrokes
-        tmp_status = self.client.status()
-        tmp_playback = [tmp_status["repeat"],tmp_status["random"],tmp_status["single"],tmp_status["consume"]]
+        if self.client != None:
+            tmp_status = self.client.status()
+            tmp_playback = [tmp_status["repeat"],tmp_status["random"],tmp_status["single"],tmp_status["consume"]]
+        else:
+            tmp_playback = ["0","0","0","0"]
         tmp_shifter = 0x1
         self.playback_array = ['w','r','s','c'] # LSB is left
 
         #This is for me to use bitshifting
-        #consume(c)-single(s)-random(r)repeat(w) LSB is right
+        #consume(c)-single(s)-random(r)-repeat(w) LSB is right
         self.playback = 0x0
         for x in tmp_playback:
             if x == "1":
@@ -132,6 +149,8 @@ class Commandline():
 
     def render(self, pos_y, pos_x, height, width, window):
 
+        self.window = window #ugly workaround to get texpadinput
+
         #initial check if client is up
         if self.client == None:
             window.addstr(1,3 ,"Client not running", curses.A_BLINK)
@@ -140,6 +159,7 @@ class Commandline():
 
 
         status = self.client.status()
+
 
 
         if status["state"] == "stop":
@@ -190,6 +210,18 @@ class Commandline():
         self.playback ^= a
         return int(self.playback & a)
 
+    def get_input(self, height, width):
+        if width <20:
+            win_width = width
+        else:
+            win_width = 20
+        win = curses.newwin(height-1,0,2,win_width)
+        tb = curses.textpad.Textbox(win, insert_mode=True)
+        self.text = tb.edit()
+        #win.addstr(1,0,self.text.encode('utf_8'))
+
+
+
 
 class ColorTest():
     def render(self, pos_y, pos_x, height, width, window):
@@ -235,6 +267,8 @@ class Library():
         self.uri_last = None
         self.directory = None
 
+        self.searchlist = []     #List that stores indexes of searchitem
+
 
         self.d_keys = {
             #Arrow keys
@@ -242,13 +276,17 @@ class Library():
             curses.KEY_DOWN : self.move_chosen_up,
             curses.KEY_RIGHT : self.enter_directory,
             curses.KEY_LEFT : self.return_directory,
-            curses.KEY_ENTER : self.add_directory,
             #VIM Keys
             ord('j') : self.move_chosen_up,
             ord('k') : self.move_chosen_down,
             ord('l') : self.enter_directory,
             ord('h') : self.return_directory,
-            ord(' ') : self.add_directory
+            #ord('/') : self.search,
+            ord('n') : self.next_search,
+            ord('N') : self.prev_search,
+            #ord(ESC) : self.escape_search,
+            ord(' ') : self.add_directory,
+            10 : self.add_directory,  # 10 is the number for the Enter Key
             }
 
 
@@ -258,9 +296,11 @@ class Library():
         self.window_width = width
         self.window_height = height
 
+        #setup the directory_lists
+        #lsinfo() returns a list of dictionaries
         if self.client == None:
             self.directory_list = []
-        elif self.uri != "":
+        elif self.uri != "": #check if directory is not root directory
             self.directory_list = [{"directory": ".." } ] + self.client.lsinfo(self.uri)
         else:
             self.directory_list =  self.client.lsinfo(self.uri)
@@ -272,11 +312,8 @@ class Library():
         #"ugly" method for only getting enough item as the screen can handle
         for index, library_item in enumerate(self.directory_list[self.directory_start: self.directory_start + height], 0):
 
-            a = 2
-            b= 3
             if "directory" in library_item:
                 item = "[ " + library_item["directory"] + " ]"
-                #TODO Splice
 
             elif "file" in library_item:
                 item = library_item["file"]
@@ -292,20 +329,82 @@ class Library():
             # ,textstyle | curses.color_pair(4))
 
 
+    def search(self, searchterm = "20"):
+        # Nominated for most ugly list comprehension 2019
+        # self.directory_list contains dicitionaries
+        # The name is either stored with the key 'directory' or 'file'
+        # The resulting list only cares about the matched indexes and not the actual items
+        self.searchlist = [self.directory_list.index(x) for x in self.directory_list if(searchterm in x.get("directory", {}) )or(searchterm in x.get("file", {}) ) ]
+        #print(self.searchlist)
+        self.next_search()
+
+
+    def next_search(self):
+        if self.searchlist == []:
+            return
+        #look for item that is up ahead
+        next_item = next(x for x in self.searchlist if x > self.directory_position_in_list)
+        # crazy arithmetic
+        self.directory_position_in_list = next_item
+        #check if item is in the last part
+        if int(self.directory_length) > self.window_height:
+            if next_item > int(self.directory_length) - self.window_height//2:
+                self.directory_start = int(self.directory_length) - self.window_height
+                self.directory_position_visual = self.directory_start + next_item
+            elif next_item < self.window_height//2:
+                self.directory_start = 0
+                self.directory_position_visual = next_item
+            else:
+                # move directory_start to position in list - window_height/2
+                self.directory_start = self.position_in_list - self.window_height//2
+                self.directory_position_visual = self.window_height//2
+        else:
+            self.directory_position_visual = next_item
+
+
+    def prev_search(self):
+        if self.searchlist == []:
+            return
+
+        prev_item = [x for x in self.searchlist if x < self.directory_position_in_list][-1]
+
+        self.directory_position_in_list = prev_item
+        #check if item is in the last part
+        if int(self.directory_length) > self.window_height:
+            if prev_item > int(self.directory_length) - self.window_height//2:
+                self.directory_start = int(self.directory_length) - self.window_height
+                self.directory_position_visual = self.directory_start + prev_item
+            elif prev_item < self.window_height//2:
+                self.directory_start = 0
+                self.directory_position_visual = prev_item
+            else:
+                # move directory_start to position in list - window_height/2
+                self.directory_start = self.position_in_list - self.window_height//2
+                self.directory_position_visual = self.window_height//2
+        else:
+            self.directory_position_visual = prev_item
+
+
+    def escape_search(self):
+        self.searchlist = []
+
 
     def move_chosen_up(self):
         #check if last item is highlighted
         if self.directory_position_in_list == int(self.directory_length) - 1:
             # do nothing
-            curses.beep()
+            #curses.beep()
+            pass
         # check if last item is visually reached
         elif  self.directory_position_visual == self.window_height-1:
             self.directory_position_in_list += 1 #move to next item in array
-            self.directory_start +=1 #shift visual directory
-        # move "pointer" visually in array and visual further
+            self.directory_start +=1 #offset visual directory
+            # highlighting stays on last position
+        # move "pointer" in array and visually further
         else:
             self.directory_position_visual +=1
             self.directory_position_in_list +=1
+
 
     def move_chosen_down(self):
         #check if first item is highlighted
@@ -320,6 +419,8 @@ class Library():
         else:
             self.directory_position_visual -=1
             self.directory_position_in_list -=1
+
+
     def return_directory(self):
         if len(self.l_directory_position_store) != 0:
             # restore old lists
@@ -329,6 +430,7 @@ class Library():
             self.directory_position_visual = last_directory[2]
             self.directory_position_in_list = last_directory[3]
             self.directory_start = last_directory[4]
+
 
     def enter_directory(self):
         #tmp used to keep my frigging long variable names shorter...
@@ -347,12 +449,14 @@ class Library():
                 self.uri_last = self.uri
                 self.uri = tmp["directory"]
 
+
     def add_directory(self):
         tmp = self.directory_list[self.directory_position_in_list]
         if "directory" in tmp:
             # for people like me who press the wrong key... FeelsBadMan
             if tmp["directory"] == "..":
                 self.enter_directory()
+                return
             item = tmp["directory"]
             self.client.add(item)
 
@@ -365,12 +469,14 @@ class Library():
         else:
             return "Coulnd't add item sometheing went wrong"
 
+
     def get_keys(self):
         return self.d_keys
 
 
 class Lyrics():
     pass
+
 
 class Playlist():
     def __init__(self, client):
@@ -389,10 +495,11 @@ class Playlist():
         self.d_keys = {
                  curses.KEY_UP:self.move_chosen_down,
                  curses.KEY_DOWN:self.move_chosen_up,
-                 ord('\n') : self.play_chosen,
+                 #ord('\n') : self.play_chosen,
                  ord(' ') : self.play_chosen,
-                 ord('d') : self.delete_chosen
-                 # maybe move
+                 ord('d') : self.delete_chosen,
+                 10 : self.play_chosen          #10 is the key for Enter
+                 # maybe
                 }
 
     def render(self, pos_y, pos_x, height, width, window):
@@ -485,7 +592,7 @@ class Playlist():
             # actual drawing of the Playlist Text
             window.addstr(index + 2,0, artist \
                     [:size_artist],textstyle | curses.color_pair(4))
-            window.addstr(index + 2,start_pos_track, track  \
+            window.addstr(index + 2,start_pos_track + 1, track  \
                     [:size_track], textstyle | curses.color_pair(4))
             window.addstr(index + 2,start_pos_title, title  \
                     [:size_title],textstyle | curses.color_pair(8))
@@ -502,7 +609,7 @@ class Playlist():
             # do nothing
             curses.beep()
         # check if last item is visually reached
-        elif  self.playlist_position_visual == self.window_height-3:
+        elif  self.playlist_position_visual == self.window_height-3: # -3 because of overhead from Tableheader and HLine
             self.playlist_position_in_list += 1 #move to next item in array
             self.playlist_start +=1 #shift visual playlist
         # move "pointer" visually in array and visual further
