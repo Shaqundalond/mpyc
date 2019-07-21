@@ -54,14 +54,40 @@ class viewport():
 class Help():
     def __init__(self):
         #TODO try catch
+        self.offset =0
         f= open('helpscreen', 'r')
         lines = f.readlines()
         self.properlines = [line.strip('\n') for line in lines ]
+        self.length = len(self.properlines)
         f.close()
+        self.d_keys = {
+                    #Arrow keys
+                    curses.KEY_UP : self.move_chosen_down,
+                    curses.KEY_DOWN : self.move_chosen_up,
+                    #VIM Keys
+                    ord('j') : self.move_chosen_up,
+                    ord('k') : self.move_chosen_down,
+
+        }
 
     def render(self,pos_y,pos_x, height, width, window):
-        for index, line in enumerate(self.properlines[:height]):
-            window.addstr(index,0,line)
+        self.height = height
+        self.width = width
+        for index, line in enumerate(self.properlines[self.offset :self.offset + height]):
+            window.addstr(index,0,line[:width])
+
+
+    def move_chosen_down(self):
+        if not self.length <= self.height + self. offset:
+            self.offset += 1
+
+
+    def move_chosen_up(self):
+        pass
+
+
+    def get_keys(self):
+        return self.keys
 
 
 

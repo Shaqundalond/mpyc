@@ -36,6 +36,11 @@ def main(stdscr):
         mainview.set_content(playlist)
 
 
+    def to_help():
+        mainview.set_content(help_screen)
+
+
+
     def volume_up():
         nonlocal client, bottomview
         status = client.status()
@@ -163,7 +168,7 @@ def main(stdscr):
             # Movement controls
             ord('1') : to_playlist,
             ord('2') : to_library,
-            #ord('3') : to_help,
+            ord('3') : to_help,
             #General Musicplayer controls
             ord('p') : playlist.toggle_pause,
             ord('+') : volume_up,
