@@ -57,7 +57,7 @@ class Help():
     def __init__(self):
         #TODO try catch
         self.offset =0
-        f= open('helpscreen', 'r')
+        f= open('doc/helpscreen', 'r')
         lines = f.readlines()
         self.properlines = [line.strip('\n') for line in lines ]
         self.length = len(self.properlines)
