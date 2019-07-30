@@ -8,7 +8,6 @@ Global Keys
 'u'		-	update MPD Database
 
 Playbackcontrol
-
 'p'		-	toggle playing/paused
 '+'		-	volume up
 '-'		-	volume down
@@ -32,6 +31,8 @@ Playlist Keys
 'd'		-	delete highlighted item from list
 'SPACE'		-	play highlighted song
 'ENTER'		-	play highlighted song
+'K'		-	swap with song one above
+'J'		-	swap with song one below
 
 
 Library Keys

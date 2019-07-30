@@ -1,6 +1,7 @@
 import curses
-import itertools
+#import itertools
 import mpd
+import time
 
 class viewport():
 
@@ -51,6 +52,7 @@ class viewport():
     def display_content(self):
         self.screen.refresh()
 
+
 class Help():
     def __init__(self):
         #TODO try catch
@@ -70,6 +72,7 @@ class Help():
 
         }
 
+
     def render(self,pos_y,pos_x, height, width, window):
         self.height = height
         self.width = width
@@ -77,17 +80,19 @@ class Help():
             window.addstr(index,0,line[:width])
 
 
-    def move_chosen_down(self):
-        if not self.length <= self.height + self. offset:
+    def move_chosen_up(self):
+        if not self.length <= self.height + self.offset:
             self.offset += 1
 
 
-    def move_chosen_up(self):
-        pass
+    def move_chosen_down(self):
+        if self.offset != 0:
+            self.offset -= 1
+
 
 
     def get_keys(self):
-        return self.keys
+        return self.d_keys
 
 
 
@@ -152,7 +157,7 @@ class Topbar:
 class Commandline():
 
     def __init__(self, client):
-
+        self.last_message_time = 0
         self.client = client
         self.message = "" # String used to display Data from keystrokes
         if self.client != None:
@@ -175,7 +180,8 @@ class Commandline():
 
     def render(self, pos_y, pos_x, height, width, window):
 
-        self.window = window #ugly workaround to get texpadinput
+        if (time.time() - self.last_message_time) >= 5:
+            self.message = ""
 
         #initial check if client is up
         if self.client == None:
@@ -183,10 +189,7 @@ class Commandline():
             window.hline(0,0,curses.ACS_HLINE | curses.color_pair(13),width)
             return
 
-
         status = self.client.status()
-
-
 
         if status["state"] == "stop":
             time_elapsed = "x"
@@ -220,7 +223,6 @@ class Commandline():
         s_playback += "]"
 
 
-
         window.hline(0,0,curses.ACS_HLINE | curses.color_pair(13),width)
         window.addstr(0, width - 1 - len(songduration),songduration, curses.A_BOLD | curses.color_pair(3)) #Songduration
         window.addstr(0, 2, s_playback, curses.A_BOLD | curses.color_pair(3))
@@ -229,22 +231,27 @@ class Commandline():
             self.message = self.message[:width-5] + "..."
         window.addstr(1 ,1,self.message,curses.A_NORMAL)
 
-    def display(self, text):
-        self.message = text
+
+    def display(self, text = None):
+        if text != None and text != "":
+            self.last_message_time = time.time()
+            self.message = text
+
 
     def update_playback(self, a):
         self.playback ^= a
         return int(self.playback & a)
 
-    def get_input(self, height, width):
-        if width <20:
-            win_width = width
-        else:
-            win_width = 20
-        win = curses.newwin(height-1,0,2,win_width)
-        tb = curses.textpad.Textbox(win, insert_mode=True)
-        self.text = tb.edit()
-        #win.addstr(1,0,self.text.encode('utf_8'))
+
+    #def get_input(self, height, width):
+    #    if width <20:
+    #        win_width = width
+    #    else:
+    #        win_width = 20
+    #    win = curses.newwin(height-1,0,2,win_width)
+    #    tb = curses.textpad.Textbox(win, insert_mode=True)
+    #    self.text = tb.edit()
+    #    #win.addstr(1,0,self.text.encode('utf_8'))
 
 
 
@@ -340,12 +347,21 @@ class Library():
 
             if "directory" in library_item:
                 item = "[ " + library_item["directory"] + " ]"
+                size = len(item)
+                if size > width -4 : #Symetrical spacing 2 left and right
+                    item = item[:width - 4 - 5]+ "... ]"
+                    # 4 for the spacing and  for the last string
 
             elif "file" in library_item:
                 item = library_item["file"]
+                size = len(item)
+                if size > width -4 : #Symetrical spacing 2 left and right
+                    item = item[:width - 4 - 3]+ "..."
+                    # 4 for the spacing and  for the last string
 
             else:
                 item = "WTF"
+
 
             if self.directory_position_visual == index:
                 textstyle = self.chosen
@@ -521,15 +537,18 @@ class Playlist():
         self.d_keys = {
                  curses.KEY_UP:self.move_chosen_down,
                  curses.KEY_DOWN:self.move_chosen_up,
-                 #ord('\n') : self.play_chosen,
+                 ord('j') : self.move_chosen_up,
+                 ord('k') : self.move_chosen_down,
+                 ord('J') : self.swap_down,
+                 ord('K') : self.swap_up,
+                 ord('\n') : self.play_chosen,
                  ord(' ') : self.play_chosen,
                  ord('d') : self.delete_chosen,
-                 10 : self.play_chosen          #10 is the key for Enter
                  # maybe
                 }
 
     def render(self, pos_y, pos_x, height, width, window):
-
+        self.get_playlist()
         #Stuff that needs to move into update to reduce CPU Load
         self.window_width = width
         self.window_height = height
@@ -643,6 +662,7 @@ class Playlist():
             self.playlist_position_visual +=1
             self.playlist_position_in_list +=1
 
+
     def move_chosen_down(self):
         #check if first item is highlighted
         if self.playlist_position_in_list == 0:
@@ -661,9 +681,11 @@ class Playlist():
     def play_chosen(self):
         self.client.play(self.playlist_position_in_list)
 
+
     def delete_chosen(self):
         self.client.delete(self.playlist_position_in_list)
         self.l_playlist = self.client.playlistinfo()
+
 
     def toggle_pause(self):
         status = self.client.status()["state"]
@@ -673,6 +695,7 @@ class Playlist():
         elif status == "play":
             self.client.pause(1)
 
+
     def stop():
         pass
 
@@ -681,6 +704,39 @@ class Playlist():
             self.l_playlist = []
         else:
             self.l_playlist = self.client.playlistinfo()
+
+
+    def swap_up(self):
+        if self.playlist_position_in_list == 0:
+            # Can't swap up because first item can't be swapped
+            pass
+        elif self.playlist_position_visual == 0:
+            # Visual top reached but not first item.
+            self.client.move(self.playlist_position_in_list, self.playlist_position_in_list - 1 )
+            self.playlist_position_in_list -= 1
+            self.playlist_start -= 1
+
+        else:
+            self.client.move(self.playlist_position_in_list, self.playlist_position_in_list -1 )
+            self.playlist_position_in_list -= 1
+            self.playlist_position_visual -= 1
+
+
+    def swap_down(self):
+        if self.playlist_position_in_list == int(self.s_playlist_length) -1 :
+            #Can't swap down because last item can't be swapped
+            pass
+        elif self.playlist_position_visual == self.window_height-3:
+
+            self.client.move(self.playlist_position_in_list, self.playlist_position_in_list + 1 )
+            self.playlist_position_in_list += 1
+            self.playlist_start += 1
+
+        else:
+            self.client.move(self.playlist_position_in_list, self.playlist_position_in_list +1 )
+            self.playlist_position_in_list += 1
+            self.playlist_position_visual += 1
+
 
     def get_keys(self):
         return self.d_keys

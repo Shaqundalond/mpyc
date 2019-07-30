@@ -33,7 +33,7 @@ mpyc uses mpd as daemon. MPD must be installed. For Debian-based systems run
 sudo apt-get update
 sudo apt-get install mpd
 ```
-MPD needs to be configured and running for mpyc to function properly. A sample config can be found in docs. This config needs to be saved under $HOME/.config/mpd.
+MPD needs to be configured and running for mpyc to function properly. A sample config can be found in docs. This config needs to be saved under $HOME/.config/mpd. Make sure that the Music Directory used in your mpd.conf contains music files.
 
 (Optional)To enable MPD on every systemstart run following command assuming you use systemd.
 
@@ -45,6 +45,9 @@ To start MPD run following command assuming you use systemd
 ```Bash
 sudo systemctl start mpd.service
 ```
+
+# First Usage
+When using MPD for the first time after opening MPyC press "u" to update your Music Database. MPD will now update its Database. Depending on the size of your Library this may take a while. MPyC always starts on the helpscreen with its keybindings.
 
 # Tasks
 ## General

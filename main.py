@@ -1,8 +1,8 @@
 #!/bin/python
-import curses, traceback, string, os
+import curses #, traceback, string, os
 import time
 import mpd
-import threading
+#import threading
 from classes import viewport , Topbar, Commandline, ColorTest, Playlist, Lyrics, Library, Help
 
 
@@ -23,20 +23,22 @@ def main(stdscr):
 
 
     def to_library():
-        nonlocal library, mainview,  d_functionkeys_window
+        nonlocal d_functionkeys_window
         d_functionkeys_window = library.get_keys()
         playlist.get_playlist()
         mainview.set_content(library)
 
 
     def to_playlist():
-        nonlocal playlist, mainview, d_functionkeys_window
+        nonlocal d_functionkeys_window
         d_functionkeys_window = playlist.get_keys()
         playlist.get_playlist()
         mainview.set_content(playlist)
 
 
     def to_help():
+        nonlocal d_functionkeys_window
+        d_functionkeys_window = help_screen.get_keys()
         mainview.set_content(help_screen)
 
 
@@ -54,11 +56,10 @@ def main(stdscr):
             message = "Volume set to: " + str(vol) + "%"
         else:
             message = "Can't set Volume, no softwaremixer available"
-        bottomview.content.display(message)
+        return message
 
 
     def volume_down():
-        nonlocal client, bottomview
         status = client.status()
         if "volume" in client.status():
             vol = int(status["volume"])
@@ -70,7 +71,7 @@ def main(stdscr):
             message = "Volume set to: " + str(vol) + "%"
         else:
             message = "Can't set Volume, no softwaremixer available"
-        bottomview.content.display(message)
+        return message
 
 
     def next_song():
@@ -87,29 +88,34 @@ def main(stdscr):
         if client != None:
             a = bottomview.content.update_playback(0x2)
             client.random(1) if a else client.random(0)
+            return "toggled random"
 
 
     def consume():
         if client != None:
             a = bottomview.content.update_playback(0x8)
             client.consume(1) if a else client.consume(0)
+            return "toggled consume"
 
 
     def single():
         if client != None:
             a = bottomview.content.update_playback(0x4)
             client.single(1) if a else client.single(0)
+            return "toggled single"
 
 
     def repeat():
         if client != None:
             a =bottomview.content.update_playback(0x1)
             client.repeat(1) if a else client.repeat(0)
+            return "toggled repeat"
 
 
-    def search():
-        x.start()
-        #x.join()
+    def update():
+        if client != None:
+            client.update()
+            return "updating Cient"
 
 
     #################
@@ -153,8 +159,6 @@ def main(stdscr):
     mainview= viewport(2,0,height-4,width, help_screen)
     bottomview = viewport(height-2,0,2,width, Commandline(client))
 
-    # Ugly thread for keyinput
-    x = threading.Thread(target=bottomview.content.get_input ,args = (height, width))
 
     ####################
     # Setup Keyhandler #
@@ -179,11 +183,11 @@ def main(stdscr):
             ord('c') : consume,
             ord('s') : single,
             ord('w') : repeat,
-            ord('/') : search,
+            #ord('/') : search,
             #ord('u') : update
             }
 
-    d_functionkeys_window = {}
+    d_functionkeys_window = help_screen.get_keys()
 
 
     ############
@@ -191,16 +195,22 @@ def main(stdscr):
     ############
     #counter = 0
     running = True
+    return_message = ""
     while running:
         #"KEYHANDLER"
         keypressed = True # Boolean to store valid keypress
 
         if c in d_functionkeys_main:
-            d_functionkeys_main[c]()
+            return_message = d_functionkeys_main[c]()
         elif c in d_functionkeys_window:
-            d_functionkeys_window[c]()
+           return_message = d_functionkeys_window[c]()
         else:
             keypressed = False
+
+        #Set potential message to display
+        bottomview.content.display(return_message)
+        #reset the message
+        return_message = ""
 
         # Renderpart
         topview.render_content()
