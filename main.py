@@ -42,7 +42,6 @@ def main(stdscr):
         mainview.set_content(help_screen)
 
 
-
     def volume_up():
         nonlocal client, bottomview
         status = client.status()
@@ -121,6 +120,7 @@ def main(stdscr):
     #################
     # Setup for mpd #
     #################
+    # Since my code is lazy and constantly requesting stuff from MPD there is no need to setup a timeout
     try:
         client = mpd.MPDClient(use_unicode=True)
         client.connect("localhost", 6600)       # The socket is hardcoded and should rather be read from config file.
@@ -139,7 +139,7 @@ def main(stdscr):
         curses.init_pair(i + 1, i, -1)
 
     curses.curs_set(0)      # Hide The cursor
-    stdscr.nodelay(1)       #Used to make .getch() not wait for a keysroke
+    stdscr.nodelay(1)       # Used to make .getch() not wait for a keysroke
     curses.halfdelay(1)     # make curses.getch() wait for 1/10 second until returning None
     stdscr.refresh()        # clear the screen for initial setup
     c = None                # Iniitalize c for keystrokes
@@ -184,7 +184,7 @@ def main(stdscr):
             ord('s') : single,
             ord('w') : repeat,
             #ord('/') : search,
-            #ord('u') : update
+            ord('u') : update
             }
 
     d_functionkeys_window = help_screen.get_keys()
